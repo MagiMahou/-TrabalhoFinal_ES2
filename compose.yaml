@@ -1,0 +1,78 @@
+services:
+  keycloak:
+      image: quay.io/keycloak/keycloak:latest
+      command: start-dev
+      environment:
+        - KEYCLOAK_ADMIN=admin
+        - KEYCLOAK_ADMIN_PASSWORD=admin
+        - KC_HTTP_HOST=0.0.0.0
+        - KC_HOSTNAME=host.docker.internal
+      ports:
+        - "8080:8080" 
+      networks:
+        - currency-network 
+      volumes:
+        - keycloak-data:/opt/keycloak/data 
+      
+  currency-exchange:
+    build: currency-exchange-service
+    image: exchange
+    ports:
+      - "8000:8000"
+    networks:
+      - currency-network
+    depends_on:
+      - naming-server
+    environment:
+      - eureka.client.serviceUrl.defaultZone=http://naming-server:8761/eureka
+  currency-conversion:
+    build: currency-conversion-service
+    image: conversion
+    ports:
+      - "8100:8100"
+    networks:
+      - currency-network
+    depends_on:
+      - currency-exchange
+      - naming-server
+    environment:
+      - eureka.client.serviceUrl.defaultZone=http://naming-server:8761/eureka
+      - spring.rabbitmq.addresses=amqps://mdikdljw:NDpnCNJgNuM_rb9pthYuz2Qk4sENBX9C@jackal.rmq.cloudamqp.com/mdikdljw
+  history:
+    build: history-service
+    image: history
+    ports:
+      - "8120:8120"
+    networks:
+      - currency-network
+    depends_on:
+      - naming-server
+    environment:
+      - eureka.client.serviceUrl.defaultZone=http://naming-server:8761/eureka
+      - spring.rabbitmq.addresses=amqps://mdikdljw:NDpnCNJgNuM_rb9pthYuz2Qk4sENBX9C@jackal.rmq.cloudamqp.com/mdikdljw
+  api-gateway:
+    build: api-gateway
+    image: gateway
+
+    ports:
+      - "8765:8765"
+    networks:
+      - currency-network
+    restart: on-failure
+    depends_on:
+      - naming-server
+      - keycloak
+    environment:
+      - eureka.client.serviceUrl.defaultZone=http://naming-server:8761/eureka
+  naming-server:
+    build: naming-server
+    image: nameserver
+    ports:
+      - "8761:8761"
+    networks:
+      - currency-network
+networks:
+  currency-network:
+volumes:  
+  keycloak-data:
+    external: true
