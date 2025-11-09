@@ -7,6 +7,7 @@ services:
         - KEYCLOAK_ADMIN_PASSWORD=admin
         - KC_HTTP_HOST=0.0.0.0
         - KC_HOSTNAME=host.docker.internal
+        - KC_HOSTNAME=localhost
       ports:
         - "8080:8080" 
       networks:
