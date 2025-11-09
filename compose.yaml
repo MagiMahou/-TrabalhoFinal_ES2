@@ -1,20 +1,19 @@
 services:
   keycloak:
-      image: quay.io/keycloak/keycloak:latest
-      command: start-dev
-      environment:
-        - KEYCLOAK_ADMIN=admin
-        - KEYCLOAK_ADMIN_PASSWORD=admin
-        - KC_HTTP_HOST=0.0.0.0
-        - KC_HOSTNAME=host.docker.internal
-        - KC_HOSTNAME=localhost
-      ports:
-        - "8080:8080" 
-      networks:
-        - currency-network 
-      volumes:
-        - keycloak-data:/opt/keycloak/data 
-      
+    image: quay.io/keycloak/keycloak:latest
+    command: start-dev
+    environment:
+      - KEYCLOAK_ADMIN=admin
+      - KEYCLOAK_ADMIN_PASSWORD=admin
+      - KC_HTTP_HOST=0.0.0.0
+      - KC_HOSTNAME=localhost # Corrigido para acesso do navegador
+    ports:
+      - "8080:8080" 
+    networks:
+      - currency-network 
+    volumes:
+      - keycloak-data:/opt/keycloak/data 
+    
   currency-exchange:
     build: currency-exchange-service
     image: exchange
@@ -23,9 +22,11 @@ services:
     networks:
       - currency-network
     depends_on:
-      - naming-server
+      - naming-server # Dependência simples
+    restart: on-failure # <--- Solução
     environment:
       - eureka.client.serviceUrl.defaultZone=http://naming-server:8761/eureka
+
   currency-conversion:
     build: currency-conversion-service
     image: conversion
@@ -36,9 +37,11 @@ services:
     depends_on:
       - currency-exchange
       - naming-server
+    restart: on-failure # <--- Solução
     environment:
       - eureka.client.serviceUrl.defaultZone=http://naming-server:8761/eureka
       - spring.rabbitmq.addresses=amqps://mdikdljw:NDpnCNJgNuM_rb9pthYuz2Qk4sENBX9C@jackal.rmq.cloudamqp.com/mdikdljw
+
   history:
     build: history-service
     image: history
@@ -48,23 +51,25 @@ services:
       - currency-network
     depends_on:
       - naming-server
+    restart: on-failure # <--- Solução
     environment:
       - eureka.client.serviceUrl.defaultZone=http://naming-server:8761/eureka
       - spring.rabbitmq.addresses=amqps://mdikdljw:NDpnCNJgNuM_rb9pthYuz2Qk4sENBX9C@jackal.rmq.cloudamqp.com/mdikdljw
+
   api-gateway:
     build: api-gateway
     image: gateway
-
     ports:
       - "8765:8765"
     networks:
       - currency-network
-    restart: on-failure
+    restart: on-failure # (Este já tinha)
     depends_on:
       - naming-server
       - keycloak
     environment:
       - eureka.client.serviceUrl.defaultZone=http://naming-server:8761/eureka
+
   naming-server:
     build: naming-server
     image: nameserver
@@ -72,8 +77,11 @@ services:
       - "8761:8761"
     networks:
       - currency-network
+    # REMOVIDO: Bloco 'healthcheck' que estava a falhar
+
 networks:
   currency-network:
-volumes:  
+
+volumes:
   keycloak-data:
     external: true
