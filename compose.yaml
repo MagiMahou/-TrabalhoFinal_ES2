@@ -1,18 +1,4 @@
 services:
-  keycloak:
-    image: quay.io/keycloak/keycloak:latest
-    command: start-dev
-    environment:
-      - KEYCLOAK_ADMIN=admin
-      - KEYCLOAK_ADMIN_PASSWORD=admin
-      - KC_HTTP_HOST=0.0.0.0
-      - KC_HOSTNAME=localhost # Corrigido para acesso do navegador
-    ports:
-      - "8080:8080" 
-    networks:
-      - currency-network 
-    volumes:
-      - keycloak-data:/opt/keycloak/data 
     
   currency-exchange:
     build: currency-exchange-service
@@ -66,7 +52,6 @@ services:
     restart: on-failure # (Este já tinha)
     depends_on:
       - naming-server
-      - keycloak
     environment:
       - eureka.client.serviceUrl.defaultZone=http://naming-server:8761/eureka
 
@@ -82,6 +67,3 @@ services:
 networks:
   currency-network:
 
-volumes:
-  keycloak-data:
-    external: true

@@ -29,7 +29,7 @@ spring:
      oauth2:
       resourceserver:
         jwt:
-          issuer-uri: http://host.docker.internal:8080/realms/trabalho-es2-realm
+          issuer-uri: https://lemur-17.cloud-iam.com/auth/realms/trabalho-es2-realm
 
 management:
     endpoint:
