@@ -1,72 +1,74 @@
 # Trabalho Final - Engenharia de Software II (MVP Microsserviços com IAM/SSO)
 
-Este repositório contém o MVP para o trabalho final da disciplina, demonstrando autenticação e autorização (OAuth2/OIDC) com Keycloak em um ecossistema de microsserviços Spring Boot.
+Este repositório contém o MVP (Produto Mínimo Viável) para o trabalho final da disciplina de Engenharia de Software II.
 
-## 1. Pré-requisitos
+O objetivo é demonstrar autenticação e autorização (OAuth2/OIDC) de ponta-a-ponta para um ecossistema de microsserviços Spring Boot, usando um provedor de identidade (IAM).
 
+## 🏛️ Arquitetura
+
+Este projeto utiliza uma arquitetura híbrida:
+
+* **Microsserviços (Locais):** Os 5 microsserviços (API Gateway, Naming Server, Conversion, Exchange, History) correm localmente via Docker.
+* **Provedor de Identidade (Nuvem):** O Keycloak (IAM) é hospedado na nuvem (Cloud-IAM)
+
+## 📋 Pré-requisitos
+
+Para executar este projeto, precisas ter instalados:
 * Docker
 * Docker Compose
 
-## 2. Como Executar
+## 🚀 Como Executar (Passos Obrigatórios)
 
-1.  Clone o repositório:
-   Pode ser baixado direto pelo link do repositorio do GitHub
+**A partir da pasta raiz do projeto:**
 
-2.  Suba todos os containers (incluindo o Keycloak):
-    Instale o Docke na sua maquina(Foi usado para os tesets o Docker Desktop)
-    O keyclok foi rodado na propria maquina(não foi usado serviços em nuvem)
+### 1. Compilar os Microsserviços
 
-    ```
-    docker run -p 8080:8080 -e KEYCLOAK_ADMIN=admin -e KEYCLOAK_ADMIN_PASSWORD=admin quay.io/keycloak/keycloak:latest start-dev
-    ```
-    O comando acima irá criar o Keycloak com essas credencias de acesso. (A interface web pode ser acessar pelo link http://localhost:8080 após a criação do keycloak)
+Para exceutar os tudo de uma vez, rode o comando abaixo no terminal
 
-    ```bash
-    docker-compose up --build
-    ```
+```bash
+docker-compose up --build
+```
+### 2.Como Testar (As 4 Jornadas)
+Todos os testes devem ser feitos através do API Gateway (http://localhost:8765).
 
-    O comando acimar irá subir a subir todos os serviçõs do container. É preciso que rode o comando no caminho que está todos os arquivos(....\-TrabalhoFinal_ES2)
+# 1. Obter Tokens de Acesso:
 
-    (Aguarde alguns minutos para que todos os serviços iniciem e se registrem no Eureka, é normal demorar para acessar a interface da KeyCloak após subir os serviços).
+Primeiro, obtém os tokens de acesso (JWT) para os utilizadores usuariofinal e u_admin no Postman.
 
-## 3. Endpoints Principais
+Access Token URL: https://lemur-17.cloud-iam.com/auth/realms/trabalho-es2-realm/protocol/openid-connect/token
 
-* **API Gateway (Ponto de Entrada):** `http://localhost:8765`
-    *(Todas as requisições de teste devem ser feitas para esta URL)*
+# 2. Jornada 2: Usuário Não Logado (Falha):
+Ação: GET
+URL: http://localhost:8765/convert/from/USD/to/BRL/quantity/10
+Token: (Nenhum)
+Resultado Esperado: 401 UNAUTHORIZED.
 
-* **Keycloak (Admin Console):** `http://localhost:8080`
-* **Eureka (Naming Server):** `http://localhost:8761`
+# 3. Jornada 1: Usuário Comum (Sucesso):
+Ação: GET
+URL: http://localhost:8765/convert/from/USD/to/BRL/quantity/10
+Token: Bearer Token do usuario_comum
 
-## 4. Como Testar (Jornadas Obrigatórias)
+Resultado Esperado: 200 OK com o JSON da conversão.
 
-Foi usado o Postman para obter os tokens e testar as rotas no Gateway (`:8765`).
+# 4. Teste de Segurança (Falha de Permissão)
+Ação: POST
+URL: http://localhost:8765/currency-exchange
+Token: Bearer Token do usuariofinal
+Body (JSON): { "id": 10009, "from": "TEST", "to": "FAIL", "conversionMultiple": 1.0 }
+Resultado Esperado: 403 FORBIDDEN (Acesso negado para usuario_comum).
 
-### Credenciais (Keycloak)
+# 5. Jornada 3: Admin (Criar Taxa)
+Ação: POST
+URL: http://localhost:8765/currency-exchange
+Token: Bearer Token do u_admin
+Body (JSON): { "id": 10005, "from": "EUR", "to": "GBP", "conversionMultiple": 0.85 }
 
-* **Realm:** `trabalho-es2-realm`
-* **Usuário Comum:** `u_comum_teste`
-* **Usuário Admin:** `u_admin`
+Resultado Esperado: 200 OK (ou 201 Created) com o JSON da nova taxa.
 
-### Testes
+# 6. Jornada 4: Admin (Alterar Taxa)
+Ação: PUT
+URL: http://localhost:8765/currency-exchange/10005 (usando o ID da taxa criada acima)
+Token: Bearer Token do u_admin
+Body (JSON): { "id": 10005, "from": "EUR", "to": "GBP", "conversionMultiple": 0.90 }
 
-1.  **Jornada 2 (Não Logado):**
-    * `GET /convert/from/USD/to/BRL`
-    * **(Sem Token)**
-    * **Resultado:** `401 Unauthorized`
-
-2.  **Jornada 1 (Usuário Comum):**
-    * `GET /convert/from/USD/to/BRL`
-    * **(Token: `usuariofinal`)**
-    * **Resultado:** `200 OK` (JSON com a conversão)
-
-3.  **Jornada 3 (Admin - Criar Taxa):**
-    * `POST /currency-exchange`
-    * **(Token: `u_admin`)**
-    * **Body (JSON):** `{ "id": 10005, "from": "EUR", "to": "GBP", "conversionMultiple": 0.85 }`
-    * **Resultado:** `200 OK` (JSON do objeto criado)
-
-4.  **Jornada 4 (Admin - Alterar Taxa):**
-    * `PUT /currency-exchange/10005`
-    * **(Token: `u_admin`)**
-    * **Body (JSON):** `{ "id": 10005, "from": "EUR", "to": "GBP", "conversionMultiple": 0.90 }`
-    * **Resultado:** `200 OK` (JSON com o valor atualizado)
+Resultado Esperado: 200 OK com o JSON da taxa atualizada.
