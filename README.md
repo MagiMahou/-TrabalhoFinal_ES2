@@ -4,20 +4,20 @@ Este repositório contém o MVP (Produto Mínimo Viável) para o trabalho final 
 
 O objetivo é demonstrar autenticação e autorização (OAuth2/OIDC) de ponta-a-ponta para um ecossistema de microsserviços Spring Boot, usando um provedor de identidade (IAM).
 
-## 🏛️ Arquitetura
+## Arquitetura
 
 Este projeto utiliza uma arquitetura híbrida:
 
 * **Microsserviços (Locais):** Os 5 microsserviços (API Gateway, Naming Server, Conversion, Exchange, History) correm localmente via Docker.
 * **Provedor de Identidade (Nuvem):** O Keycloak (IAM) é hospedado na nuvem (Cloud-IAM)
 
-## 📋 Pré-requisitos
+## Pré-requisitos
 
 Para executar este projeto, precisas ter instalados:
 * Docker
 * Docker Compose
 
-## 🚀 Como Executar (Passos Obrigatórios)
+## Como Executar (Passos Obrigatórios)
 
 **A partir da pasta raiz do projeto:**
 
